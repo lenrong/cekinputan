@@ -4,84 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Filter Data SKPD</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
         }
         th, td {
             border: 1px solid black;
-            padding: 5px;
+            padding: 8px;
             text-align: left;
+            white-space: nowrap; /* Agar teks tidak turun ke bawah */
         }
         th {
-            background-color: #f2f2f2;
+            background-color: #007BFF;
+            color: white;
+        }
+        select {
+            padding: 5px;
+            margin-bottom: 10px;
         }
     </style>
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQnybc1gMdp6PBJpa-FnjeR7_wJDGOj3QIxTnkXbreT0OxDsXhMK_AnifZrVDEanVqIfoHfAV2DnGyk/pub?gid=58869595&single=true&output=csv";
-
-            fetch(sheetURL)
-                .then(response => response.text())
-                .then(data => {
-                    const rows = data.split("\n").map(row => row.split(","));
-                    const header = rows[0].map(h => h.trim()); // Ambil header
-                    const skpdSet = new Set();
-
-                    // Ambil data SKPD unik (kolom ke-7, index 7 jika dihitung dari 0)
-                    rows.slice(1).forEach(row => {
-                        if (row.length > 7) skpdSet.add(row[7].trim());
-                    });
-
-                    // Tambahkan opsi filter ke dropdown
-                    const filterSelect = document.getElementById("filterSKPD");
-                    skpdSet.forEach(skpd => {
-                        const option = document.createElement("option");
-                        option.value = skpd;
-                        option.textContent = skpd;
-                        filterSelect.appendChild(option);
-                    });
-
-                    // Fungsi menampilkan data sesuai filter
-                    function renderTable(filterValue) {
-                        const tbody = document.getElementById("dataBody");
-                        tbody.innerHTML = "";
-                        rows.slice(1).forEach(row => {
-                            if (row.length > 7 && (filterValue === "" || row[7].trim() === filterValue)) {
-                                let tr = document.createElement("tr");
-                                row.forEach(cell => {
-                                    let td = document.createElement("td");
-                                    td.textContent = cell.trim();
-                                    tr.appendChild(td);
-                                });
-                                tbody.appendChild(tr);
-                            }
-                        });
-                    }
-
-                    // Tambahkan header tabel
-                    const thead = document.getElementById("tableHeader");
-                    thead.innerHTML = "";
-                    let trHead = document.createElement("tr");
-                    header.forEach(col => {
-                        let th = document.createElement("th");
-                        th.textContent = col;
-                        trHead.appendChild(th);
-                    });
-                    thead.appendChild(trHead);
-
-                    // Event filter
-                    filterSelect.addEventListener("change", function () {
-                        renderTable(this.value);
-                    });
-
-                    // Tampilkan semua data awalnya
-                    renderTable("");
-                })
-                .catch(error => console.error("Error fetching data:", error));
-        });
-    </script>
 </head>
 <body>
     <h2>Data Keuangan (Filter SKPD)</h2>
@@ -94,5 +40,73 @@
         <thead id="tableHeader"></thead>
         <tbody id="dataBody"></tbody>
     </table>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQnybc1gMdp6PBJpa-FnjeR7_wJDGOj3QIxTnkXbreT0OxDsXhMK_AnifZrVDEanVqIfoHfAV2DnGyk/pub?gid=58869595&single=true&output=csv";
+
+            fetch(sheetURL)
+                .then(response => response.text())
+                .then(csvData => {
+                    Papa.parse(csvData, {
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: function (result) {
+                            const data = result.data;
+                            const header = Object.keys(data[0]);
+
+                            // Ambil SKPD unik
+                            const skpdSet = new Set();
+                            data.forEach(row => skpdSet.add(row["SKPD"]));
+
+                            // Tambahkan opsi ke dropdown filter
+                            const filterSelect = document.getElementById("filterSKPD");
+                            skpdSet.forEach(skpd => {
+                                const option = document.createElement("option");
+                                option.value = skpd;
+                                option.textContent = skpd;
+                                filterSelect.appendChild(option);
+                            });
+
+                            // Buat header tabel
+                            const thead = document.getElementById("tableHeader");
+                            const trHead = document.createElement("tr");
+                            header.forEach(col => {
+                                let th = document.createElement("th");
+                                th.textContent = col;
+                                trHead.appendChild(th);
+                            });
+                            thead.appendChild(trHead);
+
+                            // Fungsi menampilkan data
+                            function renderTable(filterValue) {
+                                const tbody = document.getElementById("dataBody");
+                                tbody.innerHTML = "";
+                                data.forEach(row => {
+                                    if (filterValue === "" || row["SKPD"] === filterValue) {
+                                        let tr = document.createElement("tr");
+                                        header.forEach(col => {
+                                            let td = document.createElement("td");
+                                            td.textContent = row[col];
+                                            tr.appendChild(td);
+                                        });
+                                        tbody.appendChild(tr);
+                                    }
+                                });
+                            }
+
+                            // Event filter
+                            filterSelect.addEventListener("change", function () {
+                                renderTable(this.value);
+                            });
+
+                            // Tampilkan semua data awalnya
+                            renderTable("");
+                        }
+                    });
+                })
+                .catch(error => console.error("Error fetching data:", error));
+        });
+    </script>
 </body>
 </html>
