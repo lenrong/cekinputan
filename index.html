@@ -3,7 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Filter Spreadsheet SKPD</title>
+    <title>Filter Data SKPD</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 5px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQnybc1gMdp6PBJpa-FnjeR7_wJDGOj3QIxTnkXbreT0OxDsXhMK_AnifZrVDEanVqIfoHfAV2DnGyk/pub?gid=58869595&single=true&output=csv";
@@ -12,12 +26,12 @@
                 .then(response => response.text())
                 .then(data => {
                     const rows = data.split("\n").map(row => row.split(","));
-                    const header = rows[0]; // Ambil header dari CSV
+                    const header = rows[0].map(h => h.trim()); // Ambil header
                     const skpdSet = new Set();
 
-                    // Ambil data SKPD unik (kolom D, indeks 3)
+                    // Ambil data SKPD unik (kolom ke-7, index 7 jika dihitung dari 0)
                     rows.slice(1).forEach(row => {
-                        if (row.length > 3) skpdSet.add(row[3].trim());
+                        if (row.length > 7) skpdSet.add(row[7].trim());
                     });
 
                     // Tambahkan opsi filter ke dropdown
@@ -34,7 +48,7 @@
                         const tbody = document.getElementById("dataBody");
                         tbody.innerHTML = "";
                         rows.slice(1).forEach(row => {
-                            if (row.length > 3 && (filterValue === "" || row[3].trim() === filterValue)) {
+                            if (row.length > 7 && (filterValue === "" || row[7].trim() === filterValue)) {
                                 let tr = document.createElement("tr");
                                 row.forEach(cell => {
                                     let td = document.createElement("td");
@@ -45,6 +59,17 @@
                             }
                         });
                     }
+
+                    // Tambahkan header tabel
+                    const thead = document.getElementById("tableHeader");
+                    thead.innerHTML = "";
+                    let trHead = document.createElement("tr");
+                    header.forEach(col => {
+                        let th = document.createElement("th");
+                        th.textContent = col;
+                        trHead.appendChild(th);
+                    });
+                    thead.appendChild(trHead);
 
                     // Event filter
                     filterSelect.addEventListener("change", function () {
@@ -59,22 +84,14 @@
     </script>
 </head>
 <body>
-    <h2>Data Spreadsheet (Filter SKPD)</h2>
+    <h2>Data Keuangan (Filter SKPD)</h2>
     <label for="filterSKPD">Pilih SKPD:</label>
     <select id="filterSKPD">
         <option value="">Semua</option>
     </select>
     <br><br>
-    <table border="1">
-        <thead>
-            <tr id="tableHeader">
-                <th>Kolom A</th>
-                <th>Kolom B</th>
-                <th>Kolom C</th>
-                <th>SKPD</th>
-                <th>Kolom E</th>
-            </tr>
-        </thead>
+    <table>
+        <thead id="tableHeader"></thead>
         <tbody id="dataBody"></tbody>
     </table>
 </body>
